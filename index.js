@@ -13,11 +13,20 @@ const cors = require("cors");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { MongoClient } = require("mongodb");
+const createAuthRouter = require("./routes/auth");
 
 const app = express();
 
-// 允許前端跨網域讀取(CORS)
-app.use(cors());
+// 允許前端跨網域讀取(CORS)— 限制只有這些網域能呼叫這支 API
+const allowedOrigins = [
+  "http://localhost:5500",           // 本地測試用（Live Server 的網址,依你實際的 port 調整）
+  "http://127.0.0.1:5500",           // Live Server 有時會用這個網址開,兩個都要加
+  "https://3k-start.netlify.app",    // 正式上線的 Netlify 網址
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+}));
 app.use(express.json());
 
 // 設定 Cloudinary(值來自 Render 環境變數,不寫死在程式碼裡)
@@ -38,6 +47,10 @@ async function connectMongo() {
   await mongoClient.connect();
   const db = mongoClient.db("threekingdoms"); // 資料庫名稱,跟連線字串裡設的一致
   teamImagesCollection = db.collection("team_images"); // 相當於原本 json 檔裡的那份清單
+
+  // 掛上帳號登入/註冊路由
+  app.use("/auth", createAuthRouter(db));
+
   console.log("MongoDB 連線成功");
 }
 
